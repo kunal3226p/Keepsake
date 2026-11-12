@@ -1,0 +1,177 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Global safety net: deny everything by default
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() >= 1 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function isValidTimestamp(ts) {
+      return ts is timestamp && ts <= request.time;
+    }
+
+    function isValidStringList(listVal, maxLen) {
+      return listVal is list && listVal.size() <= maxLen && (listVal.size() == 0 || listVal[0] is string);
+    }
+
+    function isValidAlbum(data) {
+      return data.userId is string && data.userId.size() >= 1 && data.userId.size() <= 128 &&
+             data.title is string && data.title.size() >= 1 && data.title.size() <= 80 &&
+             data.category is string && data.category.size() >= 1 && data.category.size() <= 60 &&
+             (!('summary' in data) || data.summary == null || (data.summary is string && data.summary.size() <= 300)) &&
+             (!('tags' in data) || data.tags == null || isValidStringList(data.tags, 15)) &&
+             (!('coverPhotoUri' in data) || data.coverPhotoUri == null || (data.coverPhotoUri is string && data.coverPhotoUri.size() <= 512)) &&
+             data.photoCount is int && data.photoCount >= 0 && data.photoCount <= 500000;
+    }
+
+    function isValidFamilyMember(data) {
+      return data.userId is string && data.userId.size() >= 1 && data.userId.size() <= 128 &&
+             data.name is string && data.name.size() >= 1 && data.name.size() <= 60 &&
+             data.relationship is string && data.relationship.size() >= 1 && data.relationship.size() <= 40 &&
+             (!('faceCropBase64' in data) || data.faceCropBase64 == null || (data.faceCropBase64 is string && data.faceCropBase64.size() <= 160000)) &&
+             (!('referencePhotoUri' in data) || data.referencePhotoUri == null || (data.referencePhotoUri is string && data.referencePhotoUri.size() <= 512)) &&
+             data.taggedCount is int && data.taggedCount >= 0 && data.taggedCount <= 500000;
+    }
+
+    function isValidCollage(data) {
+      return data.userId is string && data.userId.size() >= 1 && data.userId.size() <= 128 &&
+             data.monthKey is string && data.monthKey.size() >= 4 && data.monthKey.size() <= 12 &&
+             data.monthLabel is string && data.monthLabel.size() >= 1 && data.monthLabel.size() <= 40 &&
+             data.title is string && data.title.size() >= 1 && data.title.size() <= 100 &&
+             (!('storyNote' in data) || data.storyNote == null || (data.storyNote is string && data.storyNote.size() <= 400)) &&
+             data.layoutStyle in ['EDITORIAL_TRIO', 'GRID_2X2', 'HERO_STRIP', 'MOSAIC_6'] &&
+             isValidStringList(data.photoUris, 12) &&
+             data.paletteTone is string && data.paletteTone.size() >= 1 && data.paletteTone.size() <= 30;
+    }
+
+    function isValidMemoryRecord(data) {
+      return data.userId is string && data.userId.size() >= 1 && data.userId.size() <= 128 &&
+             data.photoKey is string && data.photoKey.size() >= 1 && data.photoKey.size() <= 128 &&
+             data.uriString is string && data.uriString.size() >= 1 && data.uriString.size() <= 512 &&
+             data.displayName is string && data.displayName.size() >= 1 && data.displayName.size() <= 180 &&
+             data.monthKey is string && data.monthKey.size() >= 4 && data.monthKey.size() <= 12 &&
+             data.albumCategory is string && data.albumCategory.size() >= 1 && data.albumCategory.size() <= 60 &&
+             (!('caption' in data) || data.caption == null || (data.caption is string && data.caption.size() <= 300)) &&
+             (!('tags' in data) || data.tags == null || isValidStringList(data.tags, 15)) &&
+             (!('taggedMemberIds' in data) || data.taggedMemberIds == null || isValidStringList(data.taggedMemberIds, 15)) &&
+             data.isFavorite is bool &&
+             data.takenAtMillis is int && data.takenAtMillis >= 0;
+    }
+
+    match /users/{userId}/albums/{albumId} {
+      allow list: if isOwner(userId);
+      allow get: if isOwner(userId) && isValidId(albumId);
+      allow create: if isOwner(userId) &&
+                       isValidId(albumId) &&
+                       incoming().userId == userId &&
+                       incoming().keys().hasAll(['userId', 'title', 'category', 'photoCount', 'createdAt', 'updatedAt']) &&
+                       incoming().keys().hasOnly(['userId', 'title', 'category', 'summary', 'tags', 'coverPhotoUri', 'photoCount', 'createdAt', 'updatedAt']) &&
+                       isValidTimestamp(incoming().createdAt) &&
+                       isValidTimestamp(incoming().updatedAt) &&
+                       isValidAlbum(incoming());
+      allow update: if isSignedIn() &&
+                       isValidAlbum(incoming()) &&
+                       isOwner(userId) &&
+                       isValidId(albumId) &&
+                       incoming().userId == existing().userId &&
+                       incoming().createdAt == existing().createdAt &&
+                       isValidTimestamp(incoming().updatedAt) &&
+                       (
+                         incoming().diff(existing()).affectedKeys().hasOnly(['title', 'category', 'summary', 'tags', 'coverPhotoUri', 'photoCount', 'updatedAt'])
+                       );
+      allow delete: if isOwner(userId) && isValidId(albumId);
+    }
+
+    match /users/{userId}/family_members/{memberId} {
+      allow list: if isOwner(userId);
+      allow get: if isOwner(userId) && isValidId(memberId);
+      allow create: if isOwner(userId) &&
+                       isValidId(memberId) &&
+                       incoming().userId == userId &&
+                       incoming().keys().hasAll(['userId', 'name', 'relationship', 'taggedCount', 'createdAt', 'updatedAt']) &&
+                       incoming().keys().hasOnly(['userId', 'name', 'relationship', 'faceCropBase64', 'referencePhotoUri', 'taggedCount', 'createdAt', 'updatedAt']) &&
+                       isValidTimestamp(incoming().createdAt) &&
+                       isValidTimestamp(incoming().updatedAt) &&
+                       isValidFamilyMember(incoming());
+      allow update: if isSignedIn() &&
+                       isValidFamilyMember(incoming()) &&
+                       isOwner(userId) &&
+                       isValidId(memberId) &&
+                       incoming().userId == existing().userId &&
+                       incoming().createdAt == existing().createdAt &&
+                       isValidTimestamp(incoming().updatedAt) &&
+                       (
+                         incoming().diff(existing()).affectedKeys().hasOnly(['name', 'relationship', 'faceCropBase64', 'referencePhotoUri', 'taggedCount', 'updatedAt'])
+                       );
+      allow delete: if isOwner(userId) && isValidId(memberId);
+    }
+
+    match /users/{userId}/collages/{collageId} {
+      allow list: if isOwner(userId);
+      allow get: if isOwner(userId) && isValidId(collageId);
+      allow create: if isOwner(userId) &&
+                       isValidId(collageId) &&
+                       incoming().userId == userId &&
+                       incoming().keys().hasAll(['userId', 'monthKey', 'monthLabel', 'title', 'layoutStyle', 'photoUris', 'paletteTone', 'createdAt', 'updatedAt']) &&
+                       incoming().keys().hasOnly(['userId', 'monthKey', 'monthLabel', 'title', 'storyNote', 'layoutStyle', 'photoUris', 'paletteTone', 'createdAt', 'updatedAt']) &&
+                       isValidTimestamp(incoming().createdAt) &&
+                       isValidTimestamp(incoming().updatedAt) &&
+                       isValidCollage(incoming());
+      allow update: if isSignedIn() &&
+                       isValidCollage(incoming()) &&
+                       isOwner(userId) &&
+                       isValidId(collageId) &&
+                       incoming().userId == existing().userId &&
+                       incoming().createdAt == existing().createdAt &&
+                       isValidTimestamp(incoming().updatedAt) &&
+                       (
+                         incoming().diff(existing()).affectedKeys().hasOnly(['monthKey', 'monthLabel', 'title', 'storyNote', 'layoutStyle', 'photoUris', 'paletteTone', 'updatedAt'])
+                       );
+      allow delete: if isOwner(userId) && isValidId(collageId);
+    }
+
+    match /users/{userId}/memories/{memoryId} {
+      allow list: if isOwner(userId);
+      allow get: if isOwner(userId) && isValidId(memoryId);
+      allow create: if isOwner(userId) &&
+                       isValidId(memoryId) &&
+                       incoming().userId == userId &&
+                       incoming().keys().hasAll(['userId', 'photoKey', 'uriString', 'displayName', 'monthKey', 'albumCategory', 'isFavorite', 'takenAtMillis', 'createdAt', 'updatedAt']) &&
+                       incoming().keys().hasOnly(['userId', 'photoKey', 'uriString', 'displayName', 'monthKey', 'albumCategory', 'caption', 'tags', 'taggedMemberIds', 'isFavorite', 'takenAtMillis', 'createdAt', 'updatedAt']) &&
+                       isValidTimestamp(incoming().createdAt) &&
+                       isValidTimestamp(incoming().updatedAt) &&
+                       isValidMemoryRecord(incoming());
+      allow update: if isSignedIn() &&
+                       isValidMemoryRecord(incoming()) &&
+                       isOwner(userId) &&
+                       isValidId(memoryId) &&
+                       incoming().userId == existing().userId &&
+                       incoming().createdAt == existing().createdAt &&
+                       isValidTimestamp(incoming().updatedAt) &&
+                       (
+                         incoming().diff(existing()).affectedKeys().hasOnly(['albumCategory', 'caption', 'tags', 'taggedMemberIds', 'isFavorite', 'updatedAt'])
+                       );
+      allow delete: if isOwner(userId) && isValidId(memoryId);
+    }
+  }
+}

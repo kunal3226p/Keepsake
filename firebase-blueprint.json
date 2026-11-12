@@ -1,0 +1,266 @@
+{
+  "entities": {
+    "Album": {
+      "title": "Album",
+      "description": "AI-categorized searchable photo album belonging to a user",
+      "type": "object",
+      "properties": {
+        "userId": {
+          "type": "string",
+          "description": "Authenticated owner UID"
+        },
+        "title": {
+          "type": "string",
+          "description": "Human-friendly album title"
+        },
+        "category": {
+          "type": "string",
+          "description": "AI category key"
+        },
+        "summary": {
+          "type": "string",
+          "description": "Short AI description of the album theme"
+        },
+        "tags": {
+          "type": "array",
+          "description": "Up to 15 searchable keywords"
+        },
+        "coverPhotoUri": {
+          "type": "string",
+          "description": "Representative device photo URI for album cover"
+        },
+        "photoCount": {
+          "type": "integer",
+          "description": "Number of photos categorized into this album"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp on creation"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp on last update"
+        }
+      },
+      "required": [
+        "userId",
+        "title",
+        "category",
+        "photoCount",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "FamilyMember": {
+      "title": "FamilyMember",
+      "description": "User-selected reference family face profile for collection-wide recognition",
+      "type": "object",
+      "properties": {
+        "userId": {
+          "type": "string",
+          "description": "Authenticated owner UID"
+        },
+        "name": {
+          "type": "string",
+          "description": "Family member display name"
+        },
+        "relationship": {
+          "type": "string",
+          "description": "Family role or relationship"
+        },
+        "faceCropBase64": {
+          "type": "string",
+          "description": "Compact JPEG base64 thumbnail of the cropped reference face"
+        },
+        "referencePhotoUri": {
+          "type": "string",
+          "description": "Original device photo URI"
+        },
+        "taggedCount": {
+          "type": "integer",
+          "description": "Count of photos tagged with this family member"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp on creation"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp on last update"
+        }
+      },
+      "required": [
+        "userId",
+        "name",
+        "relationship",
+        "taggedCount",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "Collage": {
+      "title": "Collage",
+      "description": "Monthly favorite memory collage curated by AI and user",
+      "type": "object",
+      "properties": {
+        "userId": {
+          "type": "string",
+          "description": "Authenticated owner UID"
+        },
+        "monthKey": {
+          "type": "string",
+          "description": "Year-month key e.g. 2026-11"
+        },
+        "monthLabel": {
+          "type": "string",
+          "description": "Display month e.g. November 2026"
+        },
+        "title": {
+          "type": "string",
+          "description": "Collage editorial title"
+        },
+        "storyNote": {
+          "type": "string",
+          "description": "Short AI-crafted monthly memory reflection"
+        },
+        "layoutStyle": {
+          "type": "string",
+          "enum": ["EDITORIAL_TRIO", "GRID_2X2", "HERO_STRIP", "MOSAIC_6"],
+          "description": "Visual layout style for the collage"
+        },
+        "photoUris": {
+          "type": "array",
+          "description": "Up to 12 favorite photo URIs featured in this collage"
+        },
+        "paletteTone": {
+          "type": "string",
+          "description": "Warm frame tone preset"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp on creation"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp on last update"
+        }
+      },
+      "required": [
+        "userId",
+        "monthKey",
+        "monthLabel",
+        "title",
+        "layoutStyle",
+        "photoUris",
+        "paletteTone",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "MemoryRecord": {
+      "title": "MemoryRecord",
+      "description": "Cloud-synced favorite, AI-tagged, or family-tagged photo metadata record",
+      "type": "object",
+      "properties": {
+        "userId": {
+          "type": "string",
+          "description": "Authenticated owner UID"
+        },
+        "photoKey": {
+          "type": "string",
+          "description": "Stable hash key for the photo"
+        },
+        "uriString": {
+          "type": "string",
+          "description": "Device photo content URI"
+        },
+        "displayName": {
+          "type": "string",
+          "description": "Photo filename"
+        },
+        "monthKey": {
+          "type": "string",
+          "description": "Year-month grouping key"
+        },
+        "albumCategory": {
+          "type": "string",
+          "description": "Assigned AI album category"
+        },
+        "caption": {
+          "type": "string",
+          "description": "AI-generated descriptive caption"
+        },
+        "tags": {
+          "type": "array",
+          "description": "Up to 15 searchable AI tags"
+        },
+        "taggedMemberIds": {
+          "type": "array",
+          "description": "Up to 15 tagged family member document IDs"
+        },
+        "isFavorite": {
+          "type": "boolean",
+          "description": "Whether marked as a favorite memory"
+        },
+        "takenAtMillis": {
+          "type": "integer",
+          "description": "Epoch milliseconds when photo was taken"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp on creation"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp on last update"
+        }
+      },
+      "required": [
+        "userId",
+        "photoKey",
+        "uriString",
+        "displayName",
+        "monthKey",
+        "albumCategory",
+        "isFavorite",
+        "takenAtMillis",
+        "createdAt",
+        "updatedAt"
+      ]
+    }
+  },
+  "firestore": {
+    "/users/{userId}/albums/{albumId}": {
+      "schema": {
+        "$ref": "#/entities/Album"
+      },
+      "description": "User's AI-categorized searchable photo albums"
+    },
+    "/users/{userId}/family_members/{memberId}": {
+      "schema": {
+        "$ref": "#/entities/FamilyMember"
+      },
+      "description": "User's selected family face profiles for tagging across photos"
+    },
+    "/users/{userId}/collages/{collageId}": {
+      "schema": {
+        "$ref": "#/entities/Collage"
+      },
+      "description": "User's monthly favorite memory collages"
+    },
+    "/users/{userId}/memories/{memoryId}": {
+      "schema": {
+        "$ref": "#/entities/MemoryRecord"
+      },
+      "description": "User's synced photo metadata, AI tags, family tags, and favorites"
+    }
+  }
+}

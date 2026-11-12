@@ -1,0 +1,6 @@
+{
+  "name": "Keepsake",
+  "description": "AI photo organizer that categorizes thousands of photos into searchable albums, tags family faces across your collection, and crafts monthly memory collages.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
